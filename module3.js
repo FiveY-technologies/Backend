@@ -12,14 +12,17 @@ const db = mysql.createPool({
   password: 'Yayaya#143',
   database: '5ydatabase',
 });
-
+ //Changes done
 const createTableQuery = `
 CREATE TABLE IF NOT EXISTS Fueldata (
   id INT PRIMARY KEY,
+  timestamp TIMESTAMP,
   organization_name VARCHAR(255),
   vehicle_name VARCHAR(255),
   vehicle_mode VARCHAR(255),
   vehicle_model VARCHAR(255),
+  current_day_fuel_cost DECIMAL (6,3),
+  consumed_fuel_cost DECIMAL (6,3),
   sensor VARCHAR(255),
   start_fuel FLOAT,
   end_fuel FLOAT,
@@ -30,11 +33,11 @@ CREATE TABLE IF NOT EXISTS Fueldata (
   end_kms FLOAT,
   distance_travelled FLOAT,
   kmpl FLOAT,
-  running_hours FLOAT,
-  engine_on_hours FLOAT,
-  secondary_engine_hours FLOAT,
-  engine_idle_hours FLOAT,
-  liters_per_hour FLOAT,
+  running_hours TIME ,
+  engine_on_hours TIME,
+  secondary_engine_hours TIME,
+  engine_idle_hours TIME,
+  liters_per_hour TIME,
   start_location VARCHAR(255),
   end_location VARCHAR(255),
   driver_name VARCHAR(255),
@@ -78,22 +81,26 @@ app.get('/fuelData', (req, res) => {
           connection.query(checkQuery, [item.rowId], (err, results) => {
             if (err) {
               console.error('Error checking data: ' + err);
-            } else if (results.length === 0) {
-              const end_fuel = '200';
-              const fuel_filling = '600';
-              const fuel_theft  = '0';
+            } else if (results.length === 0) { 
+              const end_fuel = '20';
+              const fuel_filling = '60';
               const fuel_consumption = item.fuelLitre + fuel_filling - end_fuel;
-              const end_kms = '6000';
+              const fuel_theft  = fuel_consumption + fuel_filling;
+              const current_day_fuel_cost = '103.39';
+              const consumed_fuel_cost = fuel_consumption * current_day_fuel_cost;
+              const end_kms = '3500';
               const distance_travelled = item.odoDistance - end_kms;
               const kmpl = distance_travelled / fuel_consumption;
-              const liters_per_hour = '25';
-
+              const liters_per_hour = '2';
+              
               const values = [
                 item.rowId, 
                 item.orgId, 
                 item.shortName, 
                 item.vehicleMode, 
                 item.vehicleModel, 
+                current_day_fuel_cost,
+                consumed_fuel_cost,
                 item.sensorBasedVehicleMode[0].sensor, 
                 item.fuelLitre, 
                 end_fuel, 
@@ -104,8 +111,8 @@ app.get('/fuelData', (req, res) => {
                 end_kms, 
                 distance_travelled, 
                 kmpl, 
-                item.totalWorkingHours, 
-                item.totalWorkingHours, 
+                item.todayWorkingHours,
+                item.todayWorkingHours,
                 item.secondaryEngineHours, 
                 item.idleTime, 
                 liters_per_hour, 
@@ -115,8 +122,9 @@ app.get('/fuelData', (req, res) => {
                 item.driverMobile, 
                 item.alert
               ];
+             
 
-              const insertQuery = 'INSERT INTO Fueldata (id, organization_name, vehicle_name, vehicle_mode, vehicle_model, sensor, start_fuel, end_fuel, fuel_filling, fuel_theft, fuel_consumption, start_kms, end_kms, distance_travelled, kmpl, running_hours, engine_on_hours, secondary_engine_hours, engine_idle_hours, liters_per_hour, start_location, end_location, driver_name, driver_mobile_number, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+              const insertQuery = 'INSERT INTO Fueldata (id, timestamp, organization_name, vehicle_name, vehicle_mode, vehicle_model, current_day_fuel_cost, consumed_fuel_cost, sensor, start_fuel, end_fuel, fuel_filling, fuel_theft, fuel_consumption, start_kms, end_kms, distance_travelled, kmpl, running_hours, engine_on_hours, secondary_engine_hours, engine_idle_hours, liters_per_hour, start_location, end_location, driver_name, driver_mobile_number, remarks) VALUES (?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 
               connection.query(insertQuery, values, (err) => {
                 if (err) {
@@ -134,7 +142,7 @@ app.get('/fuelData', (req, res) => {
             } else {
               
               const updateQuery = 'UPDATE Fueldata SET organization_name = ?, vehicle_name = ?, vehicle_mode = ?, vehicle_model = ?, sensor = ?, start_fuel = ?, start_kms = ?, running_hours = ?, engine_on_hours = ?, secondary_engine_hours = ?, engine_idle_hours = ?, start_location = ?, end_location = ?, driver_name = ?, driver_mobile_number = ?, remarks = ? WHERE id = ?';
-
+              
               const updateValues = [
                 item.orgId, 
                 item.shortName, 
@@ -143,8 +151,8 @@ app.get('/fuelData', (req, res) => {
                 item.sensorBasedVehicleMode[0].sensor, 
                 item.fuelLitre,           
                 item.odoDistance,
-                item.totalWorkingHours, 
-                item.totalWorkingHours, 
+                item.todayWorkingHours,
+                item.todayWorkingHours,
                 item.secondaryEngineHours, 
                 item.idleTime, 
                 item.address, 
