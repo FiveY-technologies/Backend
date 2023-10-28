@@ -1,9 +1,9 @@
 {
-  "name": "module_1",
+  "name": "final",
   "version": "1.0.0",
-  "main": "module1.js",
+  "main": "final.js",
   "scripts": {
-    "start": "nodemon module1.js",
+    "start": "nodemon final.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
