@@ -3,7 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 const mysql = require('mysql');
 const app = express();
-
+app.use(cors());
 const port = 3000;
 
 const apiUrl = 'https://api.vamosys.com/mobile/getGrpDataForTrustedClients?providerName=CALYX&fcode=SPVAMO';
