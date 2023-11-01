@@ -5,8 +5,8 @@ const app = express();
 const port = 3000;
 const cors = require('cors');
 
-const apiUrlDirection = 'https://api.vamosys.com/mobile/getGrpDataForTrustedClients?providerName=CALYX&fcode=SPVAMO';
-const apiUrlFuelData = 'https://api.vamosys.com/mobile/getGrpDataForTrustedClients?providerName=CALYX&fcode=SPVAMO';
+const apiUrl= 'https://api.vamosys.com/mobile/getGrpDataForTrustedClients?providerName=CALYX&fcode=SPVAMO';
+
 //up change
 app.use(cors());
 
@@ -86,7 +86,7 @@ db.getConnection((connectionError, connection) => {
 });
 
 app.get('/direction', (req, res) => {
-  axios.get(apiUrlDirection)
+  axios.get(apiUrl)
     .then((response) => {
       const apiData = response.data;
       let queriesToExecute = apiData.length;
@@ -152,7 +152,7 @@ app.get('/direction', (req, res) => {
 });
 
 app.get('/fuelData', (req, res) => {
-  axios.get(apiUrlFuelData)
+  axios.get(apiUrl)
     .then((response) => {
       const apiData = response.data;
       let queriesToExecute = apiData.length;
