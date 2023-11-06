@@ -17,52 +17,13 @@ const db = mysql.createPool({
   database: '5ydatabase'
 });
 
-const createTableQueryDirection = `
-  CREATE TABLE IF NOT EXISTS Direction (
-    id INT NOT NULL,
-    dir_latitude NUMERIC(9, 7),
-    dir_longitude NUMERIC(9, 7),
-    time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY(Id)
-  )
-`;
 
-const createTableQueryFuelData = `
-CREATE TABLE IF NOT EXISTS Fueldata (
-  id INT PRIMARY KEY,
-  timestamp TIMESTAMP,
-  organization_name VARCHAR(255),
-  vehicle_name VARCHAR(255),
-  vehicle_mode VARCHAR(255),
-  vehicle_model VARCHAR(255),
-  sensor VARCHAR(255),
-  current_day_fuel_cost DECIMAL (6,3),
-  start_fuel FLOAT,
-  fuel_filling FLOAT,
-  end_fuel FLOAT,
-  fuel_consumption FLOAT,
-  fuel_theft FLOAT,
-  consumed_fuel_cost DECIMAL (6,3),
-  liters_per_hour TIME,
-  start_kms FLOAT,
-  end_kms FLOAT,
-  distance_travelled FLOAT,
-  kmpl FLOAT,
-  running_hours TIME,
-  engine_on_hours TIME,
-  secondary_engine_hours TIME,
-  engine_idle_hours TIME,
-  start_location VARCHAR(255),
-  end_location VARCHAR(255),
-  driver_name VARCHAR(255),
-  driver_mobile_number VARCHAR(255),
-  remarks TEXT
-)
-`;
-const createTableQueryAllData = `
-CREATE TABLE IF NOT EXISTS alldatas (
-  id INT NOT NULL,
-  latitude VARCHAR(20),
+
+const createTableQuerysetInterval = `
+CREATE TABLE IF NOT EXISTS setInterval (
+       id INT NOT NULL,
+       time TIMESTAMP,
+        latitude VARCHAR(20),
         longitude VARCHAR(20),
         speed INT,
         date DATE,
@@ -127,7 +88,7 @@ CREATE TABLE IF NOT EXISTS alldatas (
         topSpeed INT,
         fuelSensorType VARCHAR(20),
         idleEndDate BIGINT,
-        todayWorkingHours BIGINT,
+        todayWorkingHours TIME,
         sensor VARCHAR(255) ,
         sensorvehiclemode VARCHAR(20),
         fuelLitres VARCHAR(10),
@@ -167,7 +128,7 @@ CREATE TABLE IF NOT EXISTS alldatas (
         licenceType VARCHAR(20),
         licenceExpiryStatus VARCHAR(20),
         rigMode VARCHAR(20),
-        secondaryEngineHours BIGINT,
+        secondaryEngineHours TIME,
         vehicleList VARCHAR(20),
         userId VARCHAR(20),
         macid VARCHAR(20),
@@ -195,7 +156,9 @@ CREATE TABLE IF NOT EXISTS alldatas (
       end_kms FLOAT,
       distance_travelled FLOAT,
       kmpl FLOAT,
-      liters_per_hour TIME,
+      liters_per_hour INT,
+      endLocation VARCHAR(255),
+      remarks VARCHAR(10),
         PRIMARY KEY(Id)
 )
 `;
@@ -203,6 +166,7 @@ const createSetHistoryTableData = `
 CREATE TABLE IF NOT EXISTS alldatasInterhistory (
     HistoryId INT AUTO_INCREMENT PRIMARY KEY,
     id INT NOT NULL,
+    change_time TIMESTAMP,
     latitude VARCHAR(20),
     longitude VARCHAR(20),
     speed INT,
@@ -268,7 +232,7 @@ CREATE TABLE IF NOT EXISTS alldatasInterhistory (
     topSpeed INT,
     fuelSensorType VARCHAR(20),
     idleEndDate BIGINT,
-    todayWorkingHours BIGINT,
+    todayWorkingHours TIME,
     sensor VARCHAR(255) ,
     sensorvehiclemode VARCHAR(20),
     fuelLitres VARCHAR(10),
@@ -308,7 +272,7 @@ CREATE TABLE IF NOT EXISTS alldatasInterhistory (
     licenceType VARCHAR(20),
     licenceExpiryStatus VARCHAR(20),
     rigMode VARCHAR(20),
-    secondaryEngineHours BIGINT,
+    secondaryEngineHours TIME,
     vehicleList VARCHAR(20),
     userId VARCHAR(20),
     macid VARCHAR(20),
@@ -327,367 +291,199 @@ CREATE TABLE IF NOT EXISTS alldatasInterhistory (
     fcode VARCHAR(10),
     cameraEnabled BOOLEAN,
     ac BOOLEAN,
-    change_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    end_fuel INT,
+    fuel_filling FLOAT,
+    fuel_theft FLOAT,
+    fuel_consumption FLOAT,
+    current_day_fuel_cost DECIMAL (6,3),
+  consumed_fuel_cost DECIMAL (6,3),
+  end_kms FLOAT,
+  distance_travelled FLOAT,
+  kmpl FLOAT,
+  liters_per_hour INT,
+  endLocation VARCHAR(255),
+  remarks VARCHAR(10)
+    
 )
 `;
-
-
 db.getConnection((connectionError, connection) => {
-  if (connectionError) {
-    console.error('Database connection failed: ' + connectionError.stack);
-    return;
-  }
-
-  connection.query(createTableQueryDirection, (err) => {
-    if (err) {
-      console.error('Error creating the Direction table: ' + err);
-    } else {
-      console.log('Direction table created successfully');
+    if (connectionError) {
+      console.error('Database connection failed: ' + connectionError.stack);
+      return;
     }
-  });
-
-  connection.query(createTableQueryFuelData, (err) => {
-
-    if (err) {
-      console.error('Error creating the Fueldata table: ' + err);
-    } else {
-      console.log('Fueldata table created successfully');
-    }
-  });
-
-  connection.query(createTableQueryAllData, (err) => {
-
-    if (err) {
-      console.error('Error creating the table: ' + err);
-    } else {
-      console.log('All datas table created ');
-    }
-  });
-
-  connection.query(createHistoryTableData, (err) => {
-    connection.release(); 
-
-    if (err) {
-      console.error('Error creating the table: ' + err);
-    } else {
-      console.log('All datas history table created ');
-    }
-  });
-});
-
-app.get('/direction', (req, res) => {
-  axios.get(apiUrl)
-    .then((response) => {
-      const apiData = response.data;
-      let queriesToExecute = apiData.length;
-
-      db.getConnection((connectionError, connection) => {
-        if (connectionError) {
-          console.error('Database connection failed: ' + connectionError.stack);
-          return res.status(500).json({ error: 'Database connection failed' });
-        }
-
-        for (const item of apiData) {
-          const checkQuery = 'SELECT id FROM Direction WHERE Id = ?';
-
-          connection.query(checkQuery, [item.rowId], (err, results) => {
-            if (err) {
-              console.error('Error checking data: ' + err);
-            } else if (results.length === 0) {
-              const insertQuery = 'INSERT INTO Direction (id, time, dir_latitude, dir_longitude) VALUES (?, CURRENT_TIMESTAMP, ?, ?)';
-              const values = [item.rowId, item.latitude, item.longitude];
-
-              connection.query(insertQuery, values, (err) => {
-                if (err) {
-                  console.error('Error inserting data: ' + err);
-                } else {
-                  console.log('Data inserted into Direction successfully');
-                  logChange(connection, item.rowId, item.latitude, item.longitude);
-                }
-
-                queriesToExecute--;
-                if (queriesToExecute === 0) {
-                  connection.release();
-                  fetchAndSendData(res, 'Direction');
-                }
-              });
-            } else {
-              const updateQuery = 'UPDATE Direction SET dir_latitude = ?, dir_longitude = ? WHERE id = ?';
-              const updateValues = [item.latitude, item.longitude, item.rowId];
-
-              connection.query(updateQuery, updateValues, (err) => {
-                if (err) {
-                  console.error('Error updating data: ' + err);
-                } else {
-                  console.log('Data updated in Direction table successfully');
-                  logChange(connection, item.rowId, item.latitude, item.longitude);
-                }
-
-                queriesToExecute--;
-                if (queriesToExecute === 0) {
-                  connection.release();
-                  fetchAndSendData(res, 'Direction');
-                }
-                updateValues.length = 0;
-              });
-            }
-          });
-        }
-      });
-    })
-    .catch((error) => {
-      console.error('Error fetching data from the API: ' + error);
-      res.status(500).json({ error: 'Error fetching data from the API' });
+  
+    connection.query(createTableQuerysetInterval, (err) => {
+       
+      if (err) {
+        console.error('Error creating the table: ' + err);
+      } else {
+        console.log('setInterval  table created ');
+      }
+    });
+    connection.query(createSetHistoryTableData, (err) => {
+      connection.release(); 
+  
+      if (err) {
+        console.error('Error creating the table: ' + err);
+      } else {
+        console.log('All datas Interhistory table created ');
+      }
     });
 });
-
-app.get('/fuelData', (req, res) => {
-  axios.get(apiUrl)
-    .then((response) => {
-      const apiData = response.data;
-      let queriesToExecute = apiData.length;
-
-      db.getConnection((connectionError, connection) => {
-        if (connectionError) {
-          console.error('Database connection failed: ' + connectionError.stack);
-          return res.status(500).json({ error: 'Database connection failed' });
-        }
-
-        for (const item of apiData) {
-          const checkQuery = 'SELECT id FROM Fueldata WHERE id = ?';
-
-          connection.query(checkQuery, [item.rowId], (err, results) => {
-            if (err) {
-              console.error('Error checking data: ' + err);
-            } else if (results.length === 0) {
-              const end_fuel = item.fuelLitre - 60;
-              const fuel_filling = item.fuelLitre + 20;
-              const fuel_consumption = item.fuelLitre + fuel_filling - end_fuel;
-              const fuel_theft = fuel_consumption + fuel_filling;
-              const current_day_fuel_cost = 103.39;
-              const consumed_fuel_cost = current_day_fuel_cost * fuel_consumption;
-              const end_kms = item.odoDistance + 10025;
-              const distance_travelled = item.overSpeedLimit * 2;
-              const kmpl = distance_travelled / fuel_consumption;
-              const liters_per_hour = fuel_consumption / 60;
-
-              const values = [
-                item.rowId,
-                item.orgId,
-                item.shortName,
-                item.vehicleMode,
-                item.vehicleModel,
-                item.sensorBasedVehicleMode[0].sensor,
-                current_day_fuel_cost,
-                item.fuelLitre,
-                fuel_filling,
-                end_fuel,
-                fuel_consumption,
-                fuel_theft,
-                consumed_fuel_cost,
-                liters_per_hour,
-                item.odoDistance,
-                end_kms,
-                distance_travelled,
-                kmpl,
-                item.todayWorkingHours,
-                item.todayWorkingHours,
-                item.secondaryEngineHours,
-                item.idleTime,
-                item.address,
-                item.alert,
-                item.driverName,
-                item.driverMobile,
-                item.alert
-              ];
-
-              const insertQuery = 'INSERT INTO Fueldata (id, timestamp, organization_name, vehicle_name, vehicle_mode, vehicle_model, sensor, current_day_fuel_cost, start_fuel, fuel_filling, end_fuel, fuel_consumption, fuel_theft, consumed_fuel_cost, liters_per_hour, start_kms, end_kms, distance_travelled, kmpl, running_hours, engine_on_hours, engine_idle_hours, secondary_engine_hours, start_location, end_location, driver_name, driver_mobile_number, remarks) VALUES (?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
-
-              connection.query(insertQuery, values, (err) => {
-                if (err) {
-                  console.error('Error inserting data: ' + err);
-                } else {
-                  console.log('Data inserted successfully');
-                }
-
-                queriesToExecute--;
-                if (queriesToExecute === 0) {
-                  connection.release();
-                  fetchAndSendData(res, 'Fueldata');
-                }
-              });
-            } else {
-              const updateQuery = 'UPDATE Fueldata SET organization_name = ?, vehicle_name = ?, vehicle_mode = ?, vehicle_model = ?, sensor = ?, start_fuel = ?, start_kms = ?, running_hours = ?, engine_on_hours = ?, engine_idle_hours = ?, secondary_engine_hours = ?, start_location = ?, end_location = ?, driver_name = ?, driver_mobile_number = ?, remarks = ? WHERE id = ?';
-
-              const updateValues = [
-                item.orgId,
-                item.shortName,
-                item.vehicleMode,
-                item.vehicleModel,
-                item.sensorBasedVehicleMode[0].sensor,
-                item.fuelLitre,
-                item.odoDistance,
-                item.todayWorkingHours,
-                item.secondaryEngineHours,
-                item.todayWorkingHours,
-                item.idleTime,
-                item.address,
-                item.alert,
-                item.driverName,
-                item.driverMobile,
-                item.alert,
-                item.rowId
-              ];
-
-              connection.query(updateQuery, updateValues, (err) => {
-                if (err) {
-                  console.error('Error updating data: ' + err);
-                } else {
-                  console.log('Data updated successfully');
-                }
-
-                queriesToExecute--;
-                if (queriesToExecute === 0) {
-                  connection.release();
-                  fetchAndSendData(res, 'Fueldata');
-                }
-
-              });
-            }
-          });
-        }
-      });
-    })
-    .catch((error) => {
-      console.error('Error fetching data from the API: ' + error);
-      res.status(500).json({ error: 'Error fetching data from the API' });
-    });
-});
-
-app.get('/alldatas', (req, res) => {
-  axios.get(apiUrl)
-    .then((response) => {
-      const apiData = response.data;
-      let queriesToExecute = apiData.length;
-
-      db.getConnection((connectionError, connection) => {
-        if (connectionError) {
-          console.error('Database connection failed: ' + connectionError.stack);
-          return res.status(500).json({ error: 'Database connection failed' });
-        }
-
-        for (const item of apiData) {
-          const checkQuery = 'SELECT id FROM alldatas WHERE id = ?';
-
-          connection.query(checkQuery, [item.rowId], (err, results) => {
-            if (err) {
-              console.error('Error checking data: ' + err);
-            } else if (results.length === 0) { 
-                const values = [
-                    item.rowId, item.latitude,  item.longitude,  item.speed,  item.date,
-                    item.alert, item.direction, item.position,  item.distanceCovered,
-                    item.odoDistance,  item.odoMeterDevice,  item.tankSize,  item.deviceVolt,
-                    item.status,  item.altitude, item.color, item.lastSeen,
-                    item.ignitionStatus,  item.insideGeoFence,  item.isOverSpeed,
-                    item.address,  item.parkedTime,  item.movingTime,  item.idleTime,
-                    item.noDataTime,  item.alertDateTime,  item.latLngOld, item.loadTruck,
-                    item.loadTrailer, item.totalTruck, item.totalTrailer,
-                    item.vehicleBusy,  item.fuelLitre,  item.temperature, item.powerStatus,
-                    item.deviceStatus, item.gsmLevel,  item.startParkedTime,  item.endParkedTime,
-                    item.maxSpeed,  item.averageSpeed,  item.lastComunicationTime,
-                    item.isOutOfOrder, item.tripName, item.forwardOrBackward, item.enableLog,
-                    item.dateSec,item.digitalInput3,item.fuelSensorVolt,  item.nTankSize,
-                    item.noOfTank,  item.sensorCount, item.gpsSimICCID, item.madeIn,
-                    item.manufacturingDate, item.chassisNumber, item.gpsSimNo,
-                    item.onboardDate, item.speedInfo, item.defaultMileage,  item.noDataStatus,
-                    item.lat,  item.lng,  item.topSpeed, item.fuelSensorType,
-                    item.idleEndDate,  item.todayWorkingHours, item.sensorBasedVehicleMode[0].sensor,
-                    item.sensorBasedVehicleMode[0].vehicleMode, 
-                    item.fuelLitres, item.vehicleMake,
-                    item.oprName,  item.regNo, item.vehicleType, item.vehicleId,
-                    item.mobileNo,  item.customMarker,  item.deviceModel,  item.shortName,
-                    item.orgId,  item.overSpeedLimit, item.driverName, item.error,
-                    item.live, item.fuel,  item.deviceId, item.expired,
-                    item.expiryDate, item.routeName,  item.expiryDays, item.groupName,
-                    item.safetyParking, item.description,  item.driverMobile,  item.vehicleName,
-                    item.trackName, item.report, item.licenceExpiry,  item.supportDetails,
-                    item.serial1, item.expiryStatus, item.vehicleMode,item.vehicleModel, item.licenceType,
-                    item.licenceExpiryStatus, item.rigMode,  item.secondaryEngineHours,
-                    item.vehicleList, item.userId, item.macid, item.appid,
-                    item.group, item.language, item.immobilizer, item.timeZone,
-                    item.calibrateMode, item.engineStatus,  item.communicatingPortNo,
-                    item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
-                    item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac
-                  ];
-
-                  const insertQuery =
-                  `
-                  INSERT INTO alldatas (
-                      id, latitude, longitude, speed, date, alert, direction, position, distanceCovered, odoDistance, odoMeterDevice,
-                      tankSize, deviceVolt, status, altitude, color, lastSeen, ignitionStatus, insideGeoFence, isOverSpeed,
-                      address, parkedTime, movingTime, idleTime, noDataTime, alertDateTime, latLngOld, loadTruck, loadTrailer,
-                      totalTruck, totalTrailer, vehicleBusy, fuelLitre, temperature, powerStatus, deviceStatus, gsmLevel,
-                      startParkedTime, endParkedTime, maxSpeed, averageSpeed, lastComunicationTime, isOutOfOrder, tripName,
-                      forwardOrBackward, enableLog, dateSec, digitalInput3, fuelSensorVolt, nTankSize, noOfTank, sensorCount,
-                      gpsSimICCID, madeIn, manufacturingDate, chassisNumber, gpsSimNo, onboardDate, speedInfo, defaultMileage,
-                      noDataStatus, lat, lng, topSpeed, fuelSensorType, idleEndDate, todayWorkingHours, sensor, sensorvehiclemode,
-                      fuelLitres, vehicleMake, oprName, regNo, vehicleType, vehicleId, mobileNo, customMarker, deviceModel, shortName,
-                      orgId, overSpeedLimit, driverName, error, live, fuel, deviceId, expired, expiryDate, routeName, expiryDays,
-                      groupName, safetyParking, description, driverMobile, vehicleName, trackName, report, licenceExpiry,
-                      supportDetails, serial1, expiryStatus,vehicleMode,vehicleModel, licenceType, licenceExpiryStatus, rigMode,
-                      secondaryEngineHours, vehicleList, userId, macid, appid, groupvehicle, language, immobilizer, timeZone,
-                      calibrateMode, engineStatus, communicatingPortNo, isAsset, vehicleTypeLabel, expectedFuelMileage,
-                      immobilizerStatus, fcode, cameraEnabled, ac
-                  ) 
-                  VALUES (
-                      ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                      ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                      ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                      ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                      ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-                  )
-                  `;
-                  
-              connection.query(insertQuery, values, (err) => {
-                if (err) {
-                  console.error('Error inserting data: ' + err);
-                } else {
-                  console.log('Data inserted successfully');
-                  logChange(connection,item.rowId, item.latitude,  item.longitude,  item.speed,  item.date,
-                    item.alert, item.direction, item.position,  item.distanceCovered,
-                    item.odoDistance,  item.odoMeterDevice,  item.tankSize,  item.deviceVolt,
-                    item.status,  item.altitude, item.color, item.lastSeen,
-                    item.ignitionStatus,  item.insideGeoFence,  item.isOverSpeed,
-                    item.address,  item.parkedTime,  item.movingTime,  item.idleTime,
-                    item.noDataTime,  item.alertDateTime,  item.latLngOld, item.loadTruck,
-                    item.loadTrailer, item.totalTruck, item.totalTrailer,
-                    item.vehicleBusy,  item.fuelLitre,  item.temperature, item.powerStatus,
-                    item.deviceStatus, item.gsmLevel,  item.startParkedTime,  item.endParkedTime,
-                    item.maxSpeed,  item.averageSpeed,  item.lastComunicationTime,
-                    item.isOutOfOrder, item.tripName, item.forwardOrBackward, item.enableLog,
-                    item.dateSec,item.digitalInput3,item.fuelSensorVolt,  item.nTankSize,
-                    item.noOfTank,  item.sensorCount, item.gpsSimICCID, item.madeIn,
-                    item.manufacturingDate, item.chassisNumber, item.gpsSimNo,
-                    item.onboardDate, item.speedInfo, item.defaultMileage,  item.noDataStatus,
-                    item.lat,  item.lng,  item.topSpeed, item.fuelSensorType,
-                    item.idleEndDate,  item.todayWorkingHours, item.sensorBasedVehicleMode[0].sensor,
-                    item.sensorBasedVehicleMode[0].vehicleMode, 
-                    item.fuelLitres, item.vehicleMake,
-                    item.oprName,  item.regNo, item.vehicleType, item.vehicleId,
-                    item.mobileNo,  item.customMarker,  item.deviceModel,  item.shortName,
-                    item.orgId,  item.overSpeedLimit, item.driverName, item.error,
-                    item.live, item.fuel,  item.deviceId, item.expired,
-                    item.expiryDate, item.routeName,  item.expiryDays, item.groupName,
-                    item.safetyParking, item.description,  item.driverMobile,  item.vehicleName,
-                    item.trackName, item.report, item.licenceExpiry,  item.supportDetails,
-                    item.serial1, item.expiryStatus, item.vehicleMode,item.vehicleModel, item.licenceType,
-                    item.licenceExpiryStatus, item.rigMode,  item.secondaryEngineHours,
-                    item.vehicleList, item.userId, item.macid, item.appid,
-                    item.group, item.language, item.immobilizer, item.timeZone,
-                    item.calibrateMode, item.engineStatus,  item.communicatingPortNo,
-                    item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
-                    item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac);
-                }
+function fetchDataAndSend(res)  {
+    function currenttime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+      }
+      
+      // 
+    axios.get(apiUrl)
+      .then((response) => {
+        const apiData = response.data;
+        let queriesToExecute = apiData.length;
+  
+        db.getConnection((connectionError, connection) => {
+          if (connectionError) {
+            console.error('Database connection failed: ' + connectionError.stack);
+            return res.status(500).json({ error: 'Database connection failed' });
+          }
+  
+          for (const item of apiData) {
+            const checkQuery = 'SELECT id FROM setInterval WHERE id = ?';
+  
+            connection.query(checkQuery, [item.rowId], (err, results) => {
+              if (err) {
+                console.error('Error checking data: ' + err);
+              } else if (results.length === 0) { 
+  
+                const end_fuel = '20';
+                const fuel_filling = '60';
+                const fuel_consumption = item.fuelLitre + fuel_filling - end_fuel;
+                const fuel_theft  = fuel_consumption + fuel_filling;
+                const current_day_fuel_cost = '103.39';
+                const consumed_fuel_cost = fuel_consumption * current_day_fuel_cost;
+                const end_kms = '3500';
+                const distance_travelled = item.odoDistance - end_kms;
+                const kmpl = distance_travelled / fuel_consumption;
+                const liters_per_hour = '2';
+                const endLocation='Chennai';
+                const remarks='Good';
+  
+                  const values = [
+                      item.rowId,item.latitude,  item.longitude,  item.speed,  item.date,
+                      item.alert, item.direction, item.position,  item.distanceCovered,
+                      item.odoDistance,  item.odoMeterDevice,  item.tankSize,  item.deviceVolt,
+                      item.status,  item.altitude, item.color, item.lastSeen,
+                      item.ignitionStatus,  item.insideGeoFence,  item.isOverSpeed,
+                      item.address,  item.parkedTime,  item.movingTime,  item.idleTime,
+                      item.noDataTime,  item.alertDateTime,  item.latLngOld, item.loadTruck,
+                      item.loadTrailer, item.totalTruck, item.totalTrailer,
+                      item.vehicleBusy,  item.fuelLitre,  item.temperature, item.powerStatus,
+                      item.deviceStatus, item.gsmLevel,  item.startParkedTime,  item.endParkedTime,
+                      item.maxSpeed,  item.averageSpeed,  item.lastComunicationTime,
+                      item.isOutOfOrder, item.tripName, item.forwardOrBackward, item.enableLog,
+                      item.dateSec,item.digitalInput3,item.fuelSensorVolt,  item.nTankSize,
+                      item.noOfTank,  item.sensorCount, item.gpsSimICCID, item.madeIn,
+                      item.manufacturingDate, item.chassisNumber, item.gpsSimNo,
+                      item.onboardDate, item.speedInfo, item.defaultMileage,  item.noDataStatus,
+                      item.lat,  item.lng,  item.topSpeed, item.fuelSensorType,
+                      item.idleEndDate,  item.todayWorkingHours, item.sensorBasedVehicleMode[0].sensor,
+                      item.sensorBasedVehicleMode[0].vehicleMode, 
+                      item.fuelLitres, item.vehicleMake,
+                      item.oprName,  item.regNo, item.vehicleType, item.vehicleId,
+                      item.mobileNo,  item.customMarker,  item.deviceModel,  item.shortName,
+                      item.orgId,  item.overSpeedLimit, item.driverName, item.error,
+                      item.live, item.fuel,  item.deviceId, item.expired,
+                      item.expiryDate, item.routeName,  item.expiryDays, item.groupName,
+                      item.safetyParking, item.description,  item.driverMobile,  item.vehicleName,
+                      item.trackName, item.report, item.licenceExpiry,  item.supportDetails,
+                      item.serial1, item.expiryStatus, item.vehicleMode,item.vehicleModel, item.licenceType,
+                      item.licenceExpiryStatus, item.rigMode,  item.secondaryEngineHours,
+                      item.vehicleList, item.userId, item.macid, item.appid,
+                      item.group, item.language, item.immobilizer, item.timeZone,
+                      item.calibrateMode, item.engineStatus,  item.communicatingPortNo,
+                      item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
+                      item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac,end_fuel,fuel_filling,
+                      fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
+                      end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks
+                    ];
+  
+                    const insertQuery =
+                    `
+                    INSERT INTO setInterval (
+                        id, time, latitude, longitude, speed, date, alert, direction, position, distanceCovered, odoDistance, odoMeterDevice,
+                        tankSize, deviceVolt, status, altitude, color, lastSeen, ignitionStatus, insideGeoFence, isOverSpeed,
+                        address, parkedTime, movingTime, idleTime, noDataTime, alertDateTime, latLngOld, loadTruck, loadTrailer,
+                        totalTruck, totalTrailer, vehicleBusy, fuelLitre, temperature, powerStatus, deviceStatus, gsmLevel,
+                        startParkedTime, endParkedTime, maxSpeed, averageSpeed, lastComunicationTime, isOutOfOrder, tripName,
+                        forwardOrBackward, enableLog, dateSec, digitalInput3, fuelSensorVolt, nTankSize, noOfTank, sensorCount,
+                        gpsSimICCID, madeIn, manufacturingDate, chassisNumber, gpsSimNo, onboardDate, speedInfo, defaultMileage,
+                        noDataStatus, lat, lng, topSpeed, fuelSensorType, idleEndDate, todayWorkingHours, sensor, sensorvehiclemode,
+                        fuelLitres, vehicleMake, oprName, regNo, vehicleType, vehicleId, mobileNo, customMarker, deviceModel, shortName,
+                        orgId, overSpeedLimit, driverName, error, live, fuel, deviceId, expired, expiryDate, routeName, expiryDays,
+                        groupName, safetyParking, description, driverMobile, vehicleName, trackName, report, licenceExpiry,
+                        supportDetails, serial1, expiryStatus,vehicleMode,vehicleModel, licenceType, licenceExpiryStatus, rigMode,
+                        secondaryEngineHours, vehicleList, userId, macid, appid, groupvehicle, language, immobilizer, timeZone,
+                        calibrateMode, engineStatus, communicatingPortNo, isAsset, vehicleTypeLabel, expectedFuelMileage,
+                        immobilizerStatus, fcode, cameraEnabled, ac ,end_fuel,fuel_filling,fuel_consumption,fuel_theft,
+                        current_day_fuel_cost,consumed_fuel_cost,end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,
+                        remarks
+                    ) 
+                    VALUES (
+                        ?,CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata'), ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        ?,?,?,?,?,?,?,?,?,?,?,?
+                    )
+                    `;
+                    
+                connection.query(insertQuery, values, (err) => {
+                  if (err) {
+                    console.error('Error inserting data: ' + err);
+                  } else {
+                    console.log('Data inserted successfully');
+                     logChange(connection,item.rowId, item.latitude,  item.longitude,  item.speed,  item.date,
+                      item.alert, item.direction, item.position,  item.distanceCovered,
+                       item.odoDistance,  item.odoMeterDevice,  item.tankSize,  item.deviceVolt,
+                       item.status,  item.altitude, item.color, item.lastSeen,
+                      item.ignitionStatus,  item.insideGeoFence,  item.isOverSpeed,
+                      item.address,  item.parkedTime,  item.movingTime,  item.idleTime,
+                      item.noDataTime,  item.alertDateTime,  item.latLngOld, item.loadTruck,
+                       item.loadTrailer, item.totalTruck, item.totalTrailer,
+                       item.vehicleBusy,  item.fuelLitre,  item.temperature, item.powerStatus,
+                       item.deviceStatus, item.gsmLevel,  item.startParkedTime,  item.endParkedTime,
+                       item.maxSpeed,  item.averageSpeed,  item.lastComunicationTime,
+                      item.isOutOfOrder, item.tripName, item.forwardOrBackward, item.enableLog,
+                      item.dateSec,item.digitalInput3,item.fuelSensorVolt,  item.nTankSize,
+                       item.noOfTank,  item.sensorCount, item.gpsSimICCID, item.madeIn,
+                     item.manufacturingDate, item.chassisNumber, item.gpsSimNo,
+                     item.onboardDate, item.speedInfo, item.defaultMileage,  item.noDataStatus,
+                       item.lat,  item.lng,  item.topSpeed, item.fuelSensorType,
+                      item.idleEndDate,  item.todayWorkingHours, item.sensorBasedVehicleMode[0].sensor,
+                      item.sensorBasedVehicleMode[0].vehicleMode, 
+                      item.fuelLitres, item.vehicleMake,
+                     item.oprName,  item.regNo, item.vehicleType, item.vehicleId,
+                      item.mobileNo,  item.customMarker,  item.deviceModel,  item.shortName,
+                      item.orgId,  item.overSpeedLimit, item.driverName, item.error,
+                      item.live, item.fuel,  item.deviceId, item.expired,
+                      item.expiryDate, item.routeName,  item.expiryDays, item.groupName,
+                       item.safetyParking, item.description,  item.driverMobile,  item.vehicleName,
+                       item.trackName, item.report, item.licenceExpiry,  item.supportDetails,
+                       item.serial1, item.expiryStatus, item.vehicleMode,item.vehicleModel, item.licenceType,
+                       item.licenceExpiryStatus, item.rigMode,  item.secondaryEngineHours,
+                       item.vehicleList, item.userId, item.macid, item.appid,
+                      item.group, item.language, item.immobilizer, item.timeZone,
+                      item.calibrateMode, item.engineStatus,  item.communicatingPortNo,
+                      item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
+                      item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac,end_fuel,fuel_filling,
+                       fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
+                       end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks);
+                  }
 
                   queriesToExecute--;
                   if (queriesToExecute === 0) {
@@ -706,6 +502,8 @@ app.get('/alldatas', (req, res) => {
                 const distance_travelled = item.odoDistance - end_kms;
                 const kmpl = distance_travelled / fuel_consumption;
                 const liters_per_hour='2';
+                const endLocation='Chennai';
+                const remarks='Good';
              
   
           const updateQuery = `
@@ -726,7 +524,7 @@ app.get('/alldatas', (req, res) => {
                 calibrateMode=?, engineStatus=?, communicatingPortNo=?, isAsset=?, vehicleTypeLabel=?, expectedFuelMileage=?,
                 immobilizerStatus=?, fcode=?, cameraEnabled=?, ac=?,end_fuel=?,fuel_filling=? ,fuel_consumption=?,fuel_theft=?,
                 current_day_fuel_cost=?,consumed_fuel_cost=?,end_kms=?,
-                distance_travelled =?, kmpl=? ,liters_per_hour=? WHERE id = ?`;
+                distance_travelled =?, kmpl=? ,liters_per_hour=?, endLocation=?, remarks=? WHERE id = ?`;
   
                 const updateValues = [
                   item.latitude,  item.longitude,  item.speed,  item.date,
@@ -764,7 +562,7 @@ app.get('/alldatas', (req, res) => {
                       item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
                       item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac,
                       end_fuel,fuel_filling,fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
-                      end_kms,distance_travelled,kmpl,liters_per_hour,item.rowId   
+                      end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks ,item.rowId   
                      
               ];
                 
@@ -809,7 +607,7 @@ app.get('/alldatas', (req, res) => {
                        item.isAsset, item.vehicleTypeLabel,  item.expectedFuelMileage,
                      item.immobilizerStatus, item.fcode,  item.cameraEnabled,  item.ac,
                        end_fuel,fuel_filling,fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
-                       end_kms,distance_travelled,kmpl,liters_per_hour,
+                       end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks
                         );
                   }
   
@@ -834,8 +632,9 @@ app.get('/alldatas', (req, res) => {
       });
   };
   fetchDataAndSend();
+ 
 
-  const interval = 43200000; // 2 minutes
+  const interval = 43200000; // 
 setInterval(fetchDataAndSend, interval);
 
 app.get('/alldatas', (req, res) => {
@@ -851,9 +650,10 @@ app.get('/alldatas/history', (req, res) => {
       return res.status(500).json({ error: 'Database connection failed' });
     }
 
-    const selectHistoryQuery = 'SELECT * FROM alldatashistory';
+    const selectsetHistoryQuery = 'SELECT * FROM alldatasInterhistory';
+    const values = [fromDate, toDate]
 
-    connection.query(selectHistoryQuery, (err, results) => {
+    connection.query(selectsetHistoryQuery, values,(err, results) => {
       if (err) {
         console.error('Error fetching data from the alldatasInterhistory table: ' + err);
         res.status(500).json({ error: 'Error fetching data from the alldatasInterhistory table' });
@@ -882,7 +682,7 @@ function logChange(connection, id, latitude, longitude, speed, date, alert, dire
   calibrateMode, engineStatus, communicatingPortNo, isAsset, vehicleTypeLabel, expectedFuelMileage,
   immobilizerStatus, fcode, cameraEnabled, ac,
   end_fuel,fuel_filling,fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
-  end_kms,distance_travelled,kmpl,liters_per_hour,change_time
+  end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks,change_time
   )
  
    {
@@ -906,7 +706,7 @@ function logChange(connection, id, latitude, longitude, speed, date, alert, dire
     calibrateMode, engineStatus, communicatingPortNo, isAsset, vehicleTypeLabel, expectedFuelMileage,
     immobilizerStatus, fcode, cameraEnabled, ac ,
     end_fuel,fuel_filling,fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
-    end_kms,distance_travelled,kmpl,liters_per_hour,change_time
+    end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks,change_time
  
 ) 
   
@@ -918,7 +718,7 @@ VALUES (
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-  ?,?,?,?,?,?,?,?,?,?,CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata')
+  ?,?,?,?,?,?,?,?,?,?,?,?,CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata')
  
 
 ) 
@@ -943,7 +743,7 @@ VALUES (
     calibrateMode, engineStatus, communicatingPortNo, isAsset, vehicleTypeLabel, expectedFuelMileage,
     immobilizerStatus, fcode, cameraEnabled, ac,
     end_fuel,fuel_filling,fuel_consumption,fuel_theft,current_day_fuel_cost,consumed_fuel_cost,
-    end_kms,distance_travelled,kmpl,liters_per_hour,change_time
+    end_kms,distance_travelled,kmpl,liters_per_hour,endLocation,remarks,change_time
   ];
 
   connection.query(logQuery, logValues, (err) => {
@@ -957,30 +757,98 @@ VALUES (
 }
 
 
-
-function fetchAndSendData(res, tableName) {
-  db.getConnection((connectionError, connection) => {
-    if (connectionError) {
-      console.error('Database connection failed: ' + connectionError.stack);
-      return res.status(500).json({ error: 'Database connection failed' });
-    }
-
-    const selectQuery = `SELECT * FROM ${tableName}`;
-
-    connection.query(selectQuery, (err, results) => {
-      if (err) {
-        console.error('Error fetching data from the database: ' + err);
-        res.status(500).json({ error: 'Error fetching data from the database' });
-      } else {
-        connection.release();
-        res.json(results);
+  function fetchAndSendData(res) {
+    db.getConnection((connectionError, connection) => {
+      if (connectionError) {
+        console.error('Database connection failed: ' + connectionError.stack);
+        return res.status(500).json({ error: 'Database connection failed' });
       }
+  
+      const selectQuery = 'SELECT * FROM setInterval';
+  
+      connection.query(selectQuery, (err, results) => {
+        if (err) {
+          console.error('Error fetching data from the alldatas table: ' + err);
+          res.status(500).json({ error: 'Error fetching data from the alldatas table' });
+        } else {
+          res.json(results);
+        }
+      });
+    });
+  }
+  
+  app.get('/direction', (req, res) => {
+    const query = 'SELECT id,time,latitude, longitude FROM setInterval';
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error querying the database:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+  
+      // Assuming your_table_name has columns named latitude and longitude
+      const coordinates = results.map((row) => ({
+          id:row.id,
+          Time:row.time,
+        latitude: row.latitude,
+        longitude: row.longitude,
+      }));
+  
+      res.json(coordinates);
     });
   });
-}
-
-
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+  app.get('/fuel', (req, res) => {
+    const query = `SELECT id, time, orgId, shortName, vehicleMode,
+    vehicleModel, current_day_fuel_cost, consumed_fuel_cost, sensor, fuelLitre, end_fuel,
+    fuel_filling, fuel_theft, fuel_consumption, odoDistance, end_kms, distance_travelled, kmpl, todayWorkingHours,todayWorkingHours, secondaryEngineHours, 
+    idleTime, liters_per_hour, address, endLocation, driverName, driverMobile, remarks FROM setInterval`;
+  
+   
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error querying the database:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+  
+      // Assuming your_table_name has columns named latitude and longitude
+      const coordinates = results.map((row) => ({
+          id:row.id,
+          time:row.time,
+          orgId:row.orgId,
+          shortName:row.shortName,
+          vehicleMode:row.vehicleMode,
+          vehicleModel:row.vehicleModel,
+          Currentdayfuelcost:row.current_day_fuel_cost,
+          consumedfuelcost:row.consumed_fuel_cost,
+          sensor:row.sensor,
+          fuelLitre:row.fuelLitre,
+          end_fuel:row.end_fuel,
+          fuel_filling:row.fuel_filling,
+          fuel_theft:row.fuel_theft,
+          fuel_consumption:row.fuel_consumption, 
+             odoDistance:row.odoDistance, 
+                  end_kms:row.end_kms, 
+                  distance_travelled  :row.distance_travelled, 
+                  kmpl:row.kmpl, 
+                  todayWorkingHours:row.todayWorkingHours,
+                  todayWorkingHours:row.todayWorkingHours,
+                   secondaryenginehours:row.secondaryEngineHours, 
+                  idletime:row.idleTime, 
+                  liters_per_hour:row.liters_per_hour, 
+                  address:row.address, 
+                  endLocation:row.endLocation,
+                  driverName:row.driverName, 
+                 driverMobile:row.driverMobile,
+                 remarks:row.remarks
+               
+      }));
+  
+      res.json(coordinates);
+    });
+  });
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+  
+    
