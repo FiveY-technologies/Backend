@@ -798,7 +798,7 @@ VALUES (
     });
   });
   app.get('/fuel', (req, res) => {
-    const query = `SELECT id, time, orgId, shortName, vehicleMode,
+    const query = `SELECT id, time, latitude, longitude, orgId, shortName, vehicleMode,
     vehicleModel, current_day_fuel_cost, consumed_fuel_cost, sensor, fuelLitre, end_fuel,
     fuel_filling, fuel_theft, fuel_consumption, odoDistance, end_kms, distance_travelled, kmpl, todayWorkingHours,todayWorkingHours, secondaryEngineHours, 
     idleTime, liters_per_hour, address, endLocation, driverName, driverMobile, remarks FROM setInterval`;
@@ -815,6 +815,60 @@ VALUES (
       const coordinates = results.map((row) => ({
           id:row.id,
           time:row.time,
+          latitude:row.latitude,
+          longitude:row.longitude,
+          orgId:row.orgId,
+          shortName:row.shortName,
+          vehicleMode:row.vehicleMode,
+          vehicleModel:row.vehicleModel,
+          Currentdayfuelcost:row.current_day_fuel_cost,
+          consumedfuelcost:row.consumed_fuel_cost,
+          sensor:row.sensor,
+          fuelLitre:row.fuelLitre,
+          end_fuel:row.end_fuel,
+          fuel_filling:row.fuel_filling,
+          fuel_theft:row.fuel_theft,
+          fuel_consumption:row.fuel_consumption, 
+             odoDistance:row.odoDistance, 
+                  end_kms:row.end_kms, 
+                  distance_travelled  :row.distance_travelled, 
+                  kmpl:row.kmpl, 
+                  todayWorkingHours:row.todayWorkingHours,
+                  todayWorkingHours:row.todayWorkingHours,
+                   secondaryenginehours:row.secondaryEngineHours, 
+                  idletime:row.idleTime, 
+                  liters_per_hour:row.liters_per_hour, 
+                  address:row.address, 
+                  endLocation:row.endLocation,
+                  driverName:row.driverName, 
+                 driverMobile:row.driverMobile,
+                 remarks:row.remarks
+               
+      }));
+  //
+      res.json(coordinates);
+    });
+  });
+  app.get('/fuel/history', (req, res) => {
+    const query = `SELECT id, change_time, latitude, longitude, orgId, shortName, vehicleMode,
+    vehicleModel, current_day_fuel_cost, consumed_fuel_cost, sensor, fuelLitre, end_fuel,
+    fuel_filling, fuel_theft, fuel_consumption, odoDistance, end_kms, distance_travelled, kmpl, todayWorkingHours,todayWorkingHours, secondaryEngineHours, 
+    idleTime, liters_per_hour, address, endLocation, driverName, driverMobile, remarks FROM alldatasInterhistory`;
+  
+   
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error querying the database:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+  
+      // Assuming your_table_name has columns named latitude and longitude
+      const coordinates = results.map((row) => ({
+          id:row.id,
+          time:row.change_time,
+          latitude:row.latitude,
+          longitude:row.longitude,
           orgId:row.orgId,
           shortName:row.shortName,
           vehicleMode:row.vehicleMode,
