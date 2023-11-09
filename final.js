@@ -17,19 +17,10 @@ const db = mysql.createPool({
   database: '5ydatabase'
 });
 
-<<<<<<< HEAD
 const createTableQuerysetInterval = `
 CREATE TABLE IF NOT EXISTS setInterval (
        id INT NOT NULL,
        time TIME,
-=======
-
-
-const createTableQuerysetInterval = `
-CREATE TABLE IF NOT EXISTS setInterval (
-       id INT NOT NULL,
-       time TIMESTAMP,
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
         latitude VARCHAR(20),
         longitude VARCHAR(20),
         speed INT,
@@ -173,11 +164,7 @@ const createSetHistoryTableData = `
 CREATE TABLE IF NOT EXISTS alldatasInterhistory (
     HistoryId INT AUTO_INCREMENT PRIMARY KEY,
     id INT NOT NULL,
-<<<<<<< HEAD
     change_time TIME,
-=======
-    change_time TIMESTAMP,
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
     latitude VARCHAR(20),
     longitude VARCHAR(20),
     speed INT,
@@ -444,11 +431,7 @@ function fetchDataAndSend(res)  {
                         remarks
                     ) 
                     VALUES (
-<<<<<<< HEAD
                         ?,CURRENT_TIME, ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-=======
-                        ?,CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata'), ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
                         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
                         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
                         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
@@ -523,11 +506,7 @@ function fetchDataAndSend(res)  {
   
           const updateQuery = `
                 UPDATE setInterval SET 
-<<<<<<< HEAD
                 time=CURRENT_TIME,latitude =?, longitude=?, speed=?, date=?, alert=?, direction=?, position=?, distanceCovered=?, odoDistance=?, odoMeterDevice=?,
-=======
-                time=CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata'),latitude =?, longitude=?, speed=?, date=?, alert=?, direction=?, position=?, distanceCovered=?, odoDistance=?, odoMeterDevice=?,
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
                 tankSize=?, deviceVolt=?, status=?, altitude=?, color=?, lastSeen=?, ignitionStatus=?, insideGeoFence=?, isOverSpeed=?,
                 address=?, parkedTime=?, movingTime=?, idleTime=?, noDataTime=?, alertDateTime=?, latLngOld=?, loadTruck=?, loadTrailer=?,
                 totalTruck=?, totalTrailer=?, vehicleBusy=?, fuelLitre=?, temperature=?, powerStatus=?, deviceStatus=?, gsmLevel=?,
@@ -737,13 +716,7 @@ VALUES (
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
   ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-<<<<<<< HEAD
   ?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIME
-=======
-  ?,?,?,?,?,?,?,?,?,?,?,?,CONVERT_TZ(NOW(), 'UTC', 'Asia/Kolkata')
- 
-
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
 ) 
  
  `;
@@ -868,16 +841,11 @@ VALUES (
                  remarks:row.remarks
                
       }));
-<<<<<<< HEAD
   
-=======
-  //
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
       res.json(coordinates);
     });
   });
   app.get('/fuel/history', (req, res) => {
-<<<<<<< HEAD
     
     const query = `SELECT id, change_time, latitude, longitude, orgId, shortName, vehicleMode,
     vehicleModel, current_day_fuel_cost, consumed_fuel_cost, sensor, fuelLitre, end_fuel,
@@ -885,14 +853,6 @@ VALUES (
     idleTime, liters_per_hour, address, endLocation, driverName, driverMobile, remarks FROM alldatasInterhistory 
     `;
   
-=======
-    const query = `SELECT id, change_time, latitude, longitude, orgId, shortName, vehicleMode,
-    vehicleModel, current_day_fuel_cost, consumed_fuel_cost, sensor, fuelLitre, end_fuel,
-    fuel_filling, fuel_theft, fuel_consumption, odoDistance, end_kms, distance_travelled, kmpl, todayWorkingHours,todayWorkingHours, secondaryEngineHours, 
-    idleTime, liters_per_hour, address, endLocation, driverName, driverMobile, remarks FROM alldatasInterhistory`;
-  
-   
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
   
     db.query(query, (err, results) => {
       if (err) {
@@ -938,7 +898,6 @@ VALUES (
       res.json(coordinates);
     });
   });
-<<<<<<< HEAD
 
   app.get('/fuel/history/date', (req, res) => {
     const fromDate = req.query.fromDate;
@@ -999,10 +958,3 @@ VALUES (
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
-=======
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
-  
-    
->>>>>>> 98df8e93401d1928266aecd83f5da790aec7bde4
